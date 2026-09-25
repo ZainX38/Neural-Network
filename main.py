@@ -16,10 +16,31 @@ class Neuron:
         total = np.dot(input, self.weights) + self.bias
         return sigmoid_function(total)
 
+class NeuralNetwork:
+    def __init__(self):
+        weights = np.array([0, 1])
+        bias = 0
 
-weights = np.array([0, 1])      # w1 = 0, w2 = 1
-bias = 4
-n = Neuron(weights, bias)
+        # Creates the hidden layer - it has only 2 neurons at the moment
+        self.h1 = Neuron(weights, bias)
+        self.h2 = Neuron(weights, bias)
 
-inputs = np.array([2, 3])       # a1 = 2, a2 = 3
-print(n.feedforward(inputs))    # 0.9990889488055994
+        # This is the output after the hidden layer
+        self.o1 = Neuron(weights, bias)
+
+    def feedforward(self, x):
+        # Finds the output of the neurons in the hidden layer
+        out_h1 = self.h1.feedforward(x)
+        out_h2 = self.h2.feedforward(x)
+
+        # Inputs of o1 are the outputs of h1 and h2
+        out_o1 = self.o1.feedforward(np.array([out_h1, out_h2]))
+
+        return out_o1
+
+
+
+network = NeuralNetwork()
+x = np.array([2, 3])
+
+print(network.feedforward(x))   # 0.7216325609518421
