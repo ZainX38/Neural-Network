@@ -1,4 +1,16 @@
 import numpy as np
+import pandas as pd
+
+mnist_data = pd.read_csv("mnist_train.csv", header=None)
+mnist_data = np.array(mnist_data)
+
+labels = mnist_data[0:, 0]  # Returns first row which has the labels (results)
+print(labels)
+
+pixel_data = mnist_data[1:]
+print(pixel_data)
+
+
 
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
