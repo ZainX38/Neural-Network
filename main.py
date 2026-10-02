@@ -1,16 +1,7 @@
 import numpy as np
 import pandas as pd
 
-mnist_data = pd.read_csv("mnist_train.csv", header=None)
-mnist_data = np.array(mnist_data)
-
-labels = mnist_data[0:, 0]  # Returns first row which has the labels (results)
-print(labels)
-
-pixel_data = mnist_data[1:]
-print(pixel_data)
-
-
+np.random.seed(0)   # Makes sure random values generated are always the same - for debugging purposes
 
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
@@ -18,9 +9,11 @@ def sigmoid_function(x):
 
 
 class Neuron:
-    def __init__(self, weights, bias):
-        self.weights = weights
-        self.bias = bias
+    def __init__(self):
+        # Creates random weights for each neuron
+        # The weights are an array of 784 random number from a normal distribution from -2 to 2
+        self.weights = np.random.randn(784)
+        self.bias = 0
 
     def feedforward(self, input):
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
@@ -29,30 +22,34 @@ class Neuron:
         return sigmoid_function(total)
 
 class NeuralNetwork:
-    def __init__(self):
-        weights = np.array([0, 1])
-        bias = 0
+    def __init__(self, neurons):
 
-        # Creates the hidden layer - it has only 2 neurons at the moment
-        self.h1 = Neuron(weights, bias)
-        self.h2 = Neuron(weights, bias)
-
-        # This is the output after the hidden layer
-        self.o1 = Neuron(weights, bias)
+        # Creates the hidden layer
+        self.neurons = neurons  # List of all 16 neurons
 
     def feedforward(self, x):
-        # Finds the output of the neurons in the hidden layer
-        out_h1 = self.h1.feedforward(x)
-        out_h2 = self.h2.feedforward(x)
-
-        # Inputs of o1 are the outputs of h1 and h2
-        out_o1 = self.o1.feedforward(np.array([out_h1, out_h2]))
-
-        return out_o1
+        pass
 
 
+mnist_data = pd.read_csv("mnist_train.csv", header=None)
+mnist_data = np.array(mnist_data)
 
-network = NeuralNetwork()
-x = np.array([2, 3])
+labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
 
-print(network.feedforward(x))   # 0.7216325609518421
+pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
+pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
+# print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
+
+HIDDEN_LAYER_SIZE = 16
+image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
+neuron_container = []
+
+# Creates the neurons for the 1st Hidden Layer
+for i in range(HIDDEN_LAYER_SIZE):
+    neuron = Neuron()
+    print(neuron.feedforward(image_pixels))
+    neuron_container.append(neuron)
+
+    
+
+
