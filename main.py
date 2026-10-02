@@ -65,25 +65,30 @@ class NeuralNetwork:
             out = neuron.feedforward(h2_out)
             final_out.append(out)
 
-        return final_out
+        return np.array(final_out)
 
 
 
+def get_mnist_data():
+    mnist_data = pd.read_csv("mnist_train.csv", header=None)
+    mnist_data = np.array(mnist_data)
 
-mnist_data = pd.read_csv("mnist_train.csv", header=None)
-mnist_data = np.array(mnist_data)
+    labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
 
-labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
+    pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
+    pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
+    # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
 
-pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
-pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
-# print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
+    return pixel_data, labels
 
-LAYER_SIZES = [784, 16, 16, 10]
-image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
+if __name__ == "__main__":
+    pixel_data, labels = get_mnist_data()
 
-neural_network = NeuralNetwork(LAYER_SIZES)
-print(neural_network.feedforward(image_pixels))
+    LAYER_SIZES = [784, 16, 16, 10]
+    image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
+
+    neural_network = NeuralNetwork(LAYER_SIZES)
+    print(neural_network.feedforward(image_pixels))
 
     
 
