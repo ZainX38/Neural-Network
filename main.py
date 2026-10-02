@@ -9,16 +9,18 @@ def sigmoid_function(x):
 
 
 class Neuron:
-    def __init__(self, weights):
-        # Creates random weights for each neuron
-        # The weights are an array of 784 random number from a normal distribution from -2 to 2
-        self.weights = np.random.randn(weights)
+    def __init__(self, num_inputs):
         self.bias = 0
 
-    def feedforward(self, input):
+        # Weights are scaled so they stay in the responsive range of sigmoid's function
+        scale_factor = 1/np.sqrt(num_inputs)
+        weights_random = np.random.randn(num_inputs)
+        self.weights = weights_random * scale_factor
+
+    def feedforward(self, inputs):
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
         # f[(a1w1 + a2w2 + anwn) + b] --> f[a•w + b]
-        total = np.dot(input, self.weights) + self.bias
+        total = np.dot(inputs, self.weights) + self.bias
         return sigmoid_function(total)
 
 class NeuralNetwork:
@@ -32,23 +34,39 @@ class NeuralNetwork:
         self.h1_neurons = []
         for i in range(self.h1_size):
             # Weights are passed using input_size as this corresponds to weight size. Weight size = input size
-            neurons = Neuron(self.input_size)
-            self.h1_neurons.append(neurons)
+            neuron = Neuron(self.input_size)
+            self.h1_neurons.append(neuron)
 
         # Creates 2nd Hidden Layer, which has 16 neurons
         self.h2_neurons = []
         for i in range(self.h2_size):
-            neurons = Neuron(self.h1_size)
-            self.h2_neurons.append(neurons)
+            neuron = Neuron(self.h1_size)
+            self.h2_neurons.append(neuron)
 
         # Creates Output Layer, which has 10 neurons
-        self.final_out = []
+        self.out_neurons = []
         for i in range(self.out_size):
-            neurons = Neuron(self.h2_size)
-            self.final_out.append(neurons)
+            neuron = Neuron(self.h2_size)
+            self.out_neurons.append(neuron)
 
     def feedforward(self, x):
-        pass
+        h1_out = []
+        for neuron in self.h1_neurons:
+            out = neuron.feedforward(x)
+            h1_out.append(out)
+
+        h2_out = []
+        for neuron in self.h2_neurons:
+            out = neuron.feedforward(h1_out)
+            h2_out.append(out)
+
+        final_out = []
+        for neuron in self.out_neurons:
+            out = neuron.feedforward(h2_out)
+            final_out.append(out)
+
+        return final_out
+
 
 
 
@@ -61,10 +79,10 @@ pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st colum
 pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
 # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
 
-LAYERS_SIZE = [784, 16, 16, 10]
+LAYER_SIZES = [784, 16, 16, 10]
 image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
 
-neural_network = NeuralNetwork(LAYERS_SIZE)
+neural_network = NeuralNetwork(LAYER_SIZES)
 print(neural_network.feedforward(image_pixels))
 
     
