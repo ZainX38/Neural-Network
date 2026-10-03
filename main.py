@@ -1,58 +1,135 @@
 import numpy as np
 import pandas as pd
 
-mnist_data = pd.read_csv("mnist_train.csv", header=None)
-mnist_data = np.array(mnist_data)
-
-labels = mnist_data[0:, 0]  # Returns first row which has the labels (results)
-print(labels)
-
-pixel_data = mnist_data[1:]
-print(pixel_data)
-
-
+np.random.seed(0)   # Makes sure random values generated are always the same - for debugging purposes
 
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
     return 1 / (1 + np.exp(-x))
 
+def cost_function(hot_encoded, final_out):
+        # It uses the hot encoded label to see how bad the network performed
+        # The greater the total sum, the worse it performed as values are more spread
+        result_array = (hot_encoded - final_out)**2
+        total_sum = np.sum(result_array)
+
+        return total_sum
 
 class Neuron:
-    def __init__(self, weights, bias):
-        self.weights = weights
-        self.bias = bias
+    def __init__(self, num_inputs):
+        self.bias = 0
 
-    def feedforward(self, input):
+        # Weights are scaled so they stay in the responsive range of sigmoid's function
+        scale_factor = 1/np.sqrt(num_inputs)
+        weights_random = np.random.randn(num_inputs)
+        self.weights = weights_random * scale_factor
+
+    def feedforward(self, inputs):
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
         # f[(a1w1 + a2w2 + anwn) + b] --> f[a•w + b]
-        total = np.dot(input, self.weights) + self.bias
+        total = np.dot(inputs, self.weights) + self.bias
         return sigmoid_function(total)
 
 class NeuralNetwork:
-    def __init__(self):
-        weights = np.array([0, 1])
-        bias = 0
+    def __init__(self, layers_size):
+        self.input_size = layers_size[0]    # 784 Inputs
+        self.h1_size = layers_size[1]       # 16 neurons in 1st hidden layer
+        self.h2_size = layers_size[2]       # 16 neurons in 2nd hidden layer
+        self.out_size = layers_size[3]      # 10 neurons in output layer
 
-        # Creates the hidden layer - it has only 2 neurons at the moment
-        self.h1 = Neuron(weights, bias)
-        self.h2 = Neuron(weights, bias)
+        # Creates the 1st Hidden Layer, which has 16 neurons
+        self.h1_neurons = []
+        for i in range(self.h1_size):
+            # Weights are passed using input_size as this corresponds to weight size. Weight size = input size
+            neuron = Neuron(self.input_size)
+            self.h1_neurons.append(neuron)
 
-        # This is the output after the hidden layer
-        self.o1 = Neuron(weights, bias)
+        # Creates 2nd Hidden Layer, which has 16 neurons
+        self.h2_neurons = []
+        for i in range(self.h2_size):
+            neuron = Neuron(self.h1_size)
+            self.h2_neurons.append(neuron)
+
+        # Creates Output Layer, which has 10 neurons
+        self.out_neurons = []
+        for i in range(self.out_size):
+            neuron = Neuron(self.h2_size)
+            self.out_neurons.append(neuron)
 
     def feedforward(self, x):
-        # Finds the output of the neurons in the hidden layer
-        out_h1 = self.h1.feedforward(x)
-        out_h2 = self.h2.feedforward(x)
+        h1_out = []
+        for neuron in self.h1_neurons:
+            out = neuron.feedforward(x)
+            h1_out.append(out)
 
-        # Inputs of o1 are the outputs of h1 and h2
-        out_o1 = self.o1.feedforward(np.array([out_h1, out_h2]))
+        h2_out = []
+        for neuron in self.h2_neurons:
+            out = neuron.feedforward(h1_out)
+            h2_out.append(out)
 
-        return out_o1
+        final_out = []
+        for neuron in self.out_neurons:
+            out = neuron.feedforward(h2_out)
+            final_out.append(out)
+
+        return np.array(final_out)
 
 
+def get_mnist_data():
+    mnist_data = pd.read_csv("mnist_train.csv", header=None)
+    mnist_data = np.array(mnist_data)
 
-network = NeuralNetwork()
-x = np.array([2, 3])
+    labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
 
-print(network.feedforward(x))   # 0.7216325609518421
+    # 60000 rows (training), and 10 columns
+    hot_encoded = np.zeros((len(labels), 10))
+
+    # Hot encode labels into hot_encode
+    for i in range(len(labels)):
+        hot_encoded[i][labels[i]] = 1
+        
+
+    pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
+    pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
+    # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
+
+    return pixel_data, hot_encoded
+
+
+def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
+    # Loops through num_images images and gives the accuracy
+    correct_guess = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
+        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
+        
+        if out_max_index == label_max_index:
+            correct_guess += 1
+
+    accuracy = (correct_guess / num_images) * 100
+
+    return accuracy
+
+
+if __name__ == "__main__":
+    pixel_data, hot_encoded = get_mnist_data()
+
+    LAYER_SIZES = [784, 16, 16, 10]
+    image_pixels = pixel_data[0:1000]    # INPUT LAYER - Gets the slices number of rows out of the 60000
+    hot_encoded = hot_encoded[0:1000]
+
+    neural_network = NeuralNetwork(LAYER_SIZES)
+    final_out = neural_network.feedforward(image_pixels[0])
+
+    cost_error = cost_function(hot_encoded[0], final_out)
+    print(cost_error)
+
+    accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, num_images=1000)
+    print(accuracy)
+
+    
+
+
