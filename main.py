@@ -7,6 +7,14 @@ def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
     return 1 / (1 + np.exp(-x))
 
+def cost_function(hot_encoded, final_out):
+        # It uses the hot encoded label to see how bad the network performed
+        # The greater the total sum, the worse it performed as values are more spread
+        result_array = (hot_encoded - final_out)**2
+        total_sum = np.sum(result_array)
+
+        return total_sum
+
 
 class Neuron:
     def __init__(self, num_inputs):
@@ -29,6 +37,8 @@ class NeuralNetwork:
         self.h1_size = layers_size[1]       # 16 neurons in 1st hidden layer
         self.h2_size = layers_size[2]       # 16 neurons in 2nd hidden layer
         self.out_size = layers_size[3]      # 10 neurons in output layer
+
+        self.layers = []
 
         # Creates the 1st Hidden Layer, which has 16 neurons
         self.h1_neurons = []
@@ -75,20 +85,30 @@ def get_mnist_data():
 
     labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
 
+    # 60000 rows (training), and 10 columns
+    hot_encoded = np.zeros((len(labels), 10))
+
+    # Hot encode labels into hot_encode
+    for i in range(len(labels)):
+        hot_encoded[i][labels[i]] = 1
+        
+
     pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
     pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
     # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
 
-    return pixel_data, labels
+    return pixel_data, hot_encoded
 
 if __name__ == "__main__":
-    pixel_data, labels = get_mnist_data()
+    pixel_data, hot_encoded = get_mnist_data()
 
     LAYER_SIZES = [784, 16, 16, 10]
     image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
 
     neural_network = NeuralNetwork(LAYER_SIZES)
-    print(neural_network.feedforward(image_pixels))
+    final_out = neural_network.feedforward(image_pixels)
+
+    print(cost_function(hot_encoded[0], final_out))
 
     
 
