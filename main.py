@@ -15,7 +15,6 @@ def cost_function(hot_encoded, final_out):
 
         return total_sum
 
-
 class Neuron:
     def __init__(self, num_inputs):
         self.bias = 0
@@ -37,8 +36,6 @@ class NeuralNetwork:
         self.h1_size = layers_size[1]       # 16 neurons in 1st hidden layer
         self.h2_size = layers_size[2]       # 16 neurons in 2nd hidden layer
         self.out_size = layers_size[3]      # 10 neurons in output layer
-
-        self.layers = []
 
         # Creates the 1st Hidden Layer, which has 16 neurons
         self.h1_neurons = []
@@ -78,7 +75,6 @@ class NeuralNetwork:
         return np.array(final_out)
 
 
-
 def get_mnist_data():
     mnist_data = pd.read_csv("mnist_train.csv", header=None)
     mnist_data = np.array(mnist_data)
@@ -99,16 +95,40 @@ def get_mnist_data():
 
     return pixel_data, hot_encoded
 
+
+def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
+    # Loops through num_images images and gives the accuracy
+    correct_guess = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
+        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
+        
+        if out_max_index == label_max_index:
+            correct_guess += 1
+
+    accuracy = (correct_guess / num_images) * 100
+
+    return accuracy
+
+
 if __name__ == "__main__":
     pixel_data, hot_encoded = get_mnist_data()
 
     LAYER_SIZES = [784, 16, 16, 10]
-    image_pixels = pixel_data[0]    # INPUT LAYER - Gets the first row which is are the pixels of the 1st image
+    image_pixels = pixel_data[0:1000]    # INPUT LAYER - Gets the slices number of rows out of the 60000
+    hot_encoded = hot_encoded[0:1000]
 
     neural_network = NeuralNetwork(LAYER_SIZES)
-    final_out = neural_network.feedforward(image_pixels)
+    final_out = neural_network.feedforward(image_pixels[0])
 
-    print(cost_function(hot_encoded[0], final_out))
+    cost_error = cost_function(hot_encoded[0], final_out)
+    print(cost_error)
+
+    accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, num_images=1000)
+    print(accuracy)
 
     
 
