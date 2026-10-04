@@ -9,11 +9,43 @@ def sigmoid_function(x):
 
 def cost_function(hot_encoded, final_out):
         # It uses the hot encoded label to see how bad the network performed
-        # The greater the total sum, the worse it performed as values are more spread
+        # The greater the total sum, the worse it performed as values are more spread and further from target
+        # High average cost = bad || Low average cost = good
         result_array = (hot_encoded - final_out)**2
         total_sum = np.sum(result_array)
 
         return total_sum
+
+def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
+    # Loops through num_images images and gives the accuracy - how many the network got correct
+    correct_guess = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
+        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
+        
+        if out_max_index == label_max_index:
+            correct_guess += 1
+
+    accuracy = (correct_guess / num_images) * 100
+
+    return accuracy
+
+def average_cost(neural_network, image_pixels, hot_encoded, num_images):
+    # Finds what the average cost is to see how the network is performing
+    # High average cost = bad || Low average cost = good
+    total_cost = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        cost = cost_function(hot_encoded[i], final_out)
+        total_cost += cost
+
+    return (total_cost / num_images)
+
 
 class Neuron:
     def __init__(self, num_inputs):
@@ -96,24 +128,6 @@ def get_mnist_data():
     return pixel_data, hot_encoded
 
 
-def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
-    # Loops through num_images images and gives the accuracy
-    correct_guess = 0
-
-    for i in range(num_images):
-        final_out = neural_network.feedforward(image_pixels[i])
-
-        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
-        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
-        
-        if out_max_index == label_max_index:
-            correct_guess += 1
-
-    accuracy = (correct_guess / num_images) * 100
-
-    return accuracy
-
-
 if __name__ == "__main__":
     pixel_data, hot_encoded = get_mnist_data()
 
@@ -125,10 +139,13 @@ if __name__ == "__main__":
     final_out = neural_network.feedforward(image_pixels[0])
 
     cost_error = cost_function(hot_encoded[0], final_out)
-    print(cost_error)
+    print(f"Cost Error: {cost_error:.2f}")
 
     accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, num_images=1000)
-    print(accuracy)
+    print(f"Accuracy: {accuracy}%")
+
+    avg_cost = average_cost(neural_network, image_pixels, hot_encoded, num_images=1000)
+    print(f"Average Cost: {avg_cost:.2f}")
 
     
 
