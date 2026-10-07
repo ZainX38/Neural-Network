@@ -6,6 +6,8 @@ np.random.seed(0)   # Makes sure random values generated are always the same - f
 LAYER_SIZES = [784, 16, 16, 10]
 NUM_IMAGES_TO_PROCESS = 1000
 
+LEARNING_RATE = 0.1
+
 
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
@@ -19,6 +21,26 @@ def cost_function(hot_encoded, final_out):
         total_sum = np.sum(result_array)
 
         return total_sum
+
+def get_mnist_data():
+    mnist_data = pd.read_csv("mnist_train.csv", header=None)
+    mnist_data = np.array(mnist_data)
+
+    labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
+
+    # 60000 rows (training), and 10 columns
+    hot_encoded = np.zeros((len(labels), 10))
+
+    # Hot encode labels into hot_encode
+    for i in range(len(labels)):
+        hot_encoded[i][labels[i]] = 1
+        
+
+    pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
+    pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
+    # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
+
+    return pixel_data, hot_encoded
 
 def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
     # Loops through num_images images and gives the accuracy - how many the network got correct
@@ -60,21 +82,24 @@ class Neuron:
         weights_random = np.random.randn(num_inputs)
         self.weights = weights_random * scale_factor
 
+        # Each neuron will store its input and output, so it can be seen for backpropagation
+        self.inputs = None
+        self.outputs = None
+        self.delta = 0
+
     def feedforward(self, inputs):
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
         # f[(a1w1 + a2w2 + anwn) + b] --> f[a•w + b]
         total = np.dot(inputs, self.weights) + self.bias
-        total = sigmoid_function(total)
+        out = sigmoid_function(total)
+
+        self.inputs = inputs
+        self.outputs = out
         
-        return total
+        return out
 
 class NeuralNetwork:
     def __init__(self, layers_size):
-        self.input_size = layers_size[0]    # 784 Inputs
-        self.h1_size = layers_size[1]       # 16 neurons in 1st hidden layer
-        self.h2_size = layers_size[2]       # 16 neurons in 2nd hidden layer
-        self.out_size = layers_size[3]      # 10 neurons in output layer
-
         self.layers = []
 
         # Loop through layer_sizes, but start at index 1 (index 0 has the inputs)
@@ -116,26 +141,6 @@ class NeuralNetwork:
         return final_out
 
 
-def get_mnist_data():
-    mnist_data = pd.read_csv("mnist_train.csv", header=None)
-    mnist_data = np.array(mnist_data)
-
-    labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
-
-    # 60000 rows (training), and 10 columns
-    hot_encoded = np.zeros((len(labels), 10))
-
-    # Hot encode labels into hot_encode
-    for i in range(len(labels)):
-        hot_encoded[i][labels[i]] = 1
-        
-
-    pixel_data = mnist_data[0:, 1:] # Returns all rows and columns (except 1st column - labels). These are pixel values from 0-255
-    pixel_data = pixel_data / 255   # Scale pixel values from 0-1 - these are the input values for the Neural Network
-    # print(pixel_data.dtype, pixel_data.min(), pixel_data.max())
-
-    return pixel_data, hot_encoded
-
 
 if __name__ == "__main__":
     image_pixels, hot_encoded = get_mnist_data()
@@ -152,7 +157,4 @@ if __name__ == "__main__":
 
     avg_cost = average_cost(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
     print(f"Average Cost: {avg_cost:.2f}")
-
-    
-
 
