@@ -3,6 +3,10 @@ import pandas as pd
 
 np.random.seed(0)   # Makes sure random values generated are always the same - for debugging purposes
 
+LAYER_SIZES = [784, 16, 16, 10]
+NUM_IMAGES_TO_PROCESS = 1000
+
+
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
     return 1 / (1 + np.exp(-x))
@@ -60,7 +64,9 @@ class Neuron:
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
         # f[(a1w1 + a2w2 + anwn) + b] --> f[a•w + b]
         total = np.dot(inputs, self.weights) + self.bias
-        return sigmoid_function(total)
+        total = sigmoid_function(total)
+        
+        return total
 
 class NeuralNetwork:
     def __init__(self, layers_size):
@@ -69,42 +75,45 @@ class NeuralNetwork:
         self.h2_size = layers_size[2]       # 16 neurons in 2nd hidden layer
         self.out_size = layers_size[3]      # 10 neurons in output layer
 
-        # Creates the 1st Hidden Layer, which has 16 neurons
-        self.h1_neurons = []
-        for i in range(self.h1_size):
-            # Weights are passed using input_size as this corresponds to weight size. Weight size = input size
-            neuron = Neuron(self.input_size)
-            self.h1_neurons.append(neuron)
+        self.layers = []
 
-        # Creates 2nd Hidden Layer, which has 16 neurons
-        self.h2_neurons = []
-        for i in range(self.h2_size):
-            neuron = Neuron(self.h1_size)
-            self.h2_neurons.append(neuron)
+        # Loop through layer_sizes, but start at index 1 (index 0 has the inputs)
+        for i in range(1, len(layers_size)):
+            num_neurons = layers_size[i]
+            num_inputs = layers_size[i-1]
 
-        # Creates Output Layer, which has 10 neurons
-        self.out_neurons = []
-        for i in range(self.out_size):
-            neuron = Neuron(self.h2_size)
-            self.out_neurons.append(neuron)
+            # Create the layer with all the neurons
+            layer = [Neuron(num_inputs) for _ in range(num_neurons)]
+
+            # Populates layers array with all the layers
+            self.layers.append(layer)
 
     def feedforward(self, x):
-        h1_out = []
-        for neuron in self.h1_neurons:
-            out = neuron.feedforward(x)
-            h1_out.append(out)
+        current_inputs = x
 
-        h2_out = []
-        for neuron in self.h2_neurons:
-            out = neuron.feedforward(h1_out)
-            h2_out.append(out)
+        # Get a layer
+        # Loop through this layer and feedforward every single element
+        # Get the output
+        # Pass this output as the input of the next layer
+        # Return this same variable as the final output
 
-        final_out = []
-        for neuron in self.out_neurons:
-            out = neuron.feedforward(h2_out)
-            final_out.append(out)
+        for layer in self.layers:
+            '''
+            out = []
+            
+                        for neuron in layer:
+                            out.append(neuron.feedforward(current_inputs))
+                        current_inputs = out
+            '''
 
-        return np.array(final_out)
+            # Current inputs processed and return an output which gets passed as the output for the next layer
+            # This is the same as the bracketed code
+            current_inputs = [neuron.feedforward(current_inputs) for neuron in layer]
+
+        # The last array to come out from the array is the final output
+        final_out = np.array(current_inputs)
+
+        return final_out
 
 
 def get_mnist_data():
@@ -129,22 +138,19 @@ def get_mnist_data():
 
 
 if __name__ == "__main__":
-    pixel_data, hot_encoded = get_mnist_data()
-
-    LAYER_SIZES = [784, 16, 16, 10]
-    image_pixels = pixel_data[0:1000]    # INPUT LAYER - Gets the slices number of rows out of the 60000
-    hot_encoded = hot_encoded[0:1000]
+    image_pixels, hot_encoded = get_mnist_data()
 
     neural_network = NeuralNetwork(LAYER_SIZES)
     final_out = neural_network.feedforward(image_pixels[0])
+    print(f"FINAL: {final_out}")
 
     cost_error = cost_function(hot_encoded[0], final_out)
     print(f"Cost Error: {cost_error:.2f}")
 
-    accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, num_images=1000)
+    accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
     print(f"Accuracy: {accuracy}%")
 
-    avg_cost = average_cost(neural_network, image_pixels, hot_encoded, num_images=1000)
+    avg_cost = average_cost(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
     print(f"Average Cost: {avg_cost:.2f}")
 
     
