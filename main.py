@@ -6,6 +6,9 @@ np.random.seed(0)   # Makes sure random values generated are always the same - f
 LAYER_SIZES = [784, 16, 16, 10]
 NUM_IMAGES_TO_PROCESS = 1000
 
+# Hyperparameter. Used to calculate the new weight.
+# A small value such as 0.01 makes learning slow as it's moving only a tiny bit in the graph to the minima
+# A large value such as 10 makes learning impossible as it can never find a minima cause it overshoots
 LEARNING_RATE = 0.1
 
 
@@ -83,8 +86,8 @@ class Neuron:
         self.weights = weights_random * scale_factor
 
         # Each neuron will store its input and output, so it can be seen for backpropagation
-        self.inputs = None
-        self.outputs = None
+        self.input = None
+        self.output = None
         self.delta = 0
 
     def feedforward(self, inputs):
@@ -93,8 +96,8 @@ class Neuron:
         total = np.dot(inputs, self.weights) + self.bias
         out = sigmoid_function(total)
 
-        self.inputs = inputs
-        self.outputs = out
+        self.input = inputs
+        self.output = out
         
         return out
 
@@ -140,6 +143,31 @@ class NeuralNetwork:
 
         return final_out
 
+    def backpropagation(self, inputs, hot_encoded):
+
+        # Runs feedforward at start, so every neuron stores its input and output
+        self.feedforward(inputs)
+
+        # Loop through each neuron in output layer
+        # Calculate delta using formula: a(1-a) x 2(a-y)
+        # where a is the target the neuron produced, and y is the expected output (hot encoded value)
+        delta_values = []
+
+        index = 0
+        for neuron in self.layers[-1]:
+            a = neuron.output
+            y = hot_encoded[index]
+
+            index+= 1
+
+            neuron.delta = a*(1-a) * 2*(a-y)
+            delta_values.append(neuron.delta)
+
+        return np.array(delta_values)
+
+
+            
+
 
 
 if __name__ == "__main__":
@@ -157,4 +185,7 @@ if __name__ == "__main__":
 
     avg_cost = average_cost(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
     print(f"Average Cost: {avg_cost:.2f}")
+
+    backprop = neural_network.backpropagation(image_pixels[0], hot_encoded[0])
+    print(f"BACKPROP: {backprop}")
 
