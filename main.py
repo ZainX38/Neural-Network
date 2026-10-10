@@ -12,6 +12,7 @@ NUM_IMAGES_TO_PROCESS = 1000
 LEARNING_RATE = 0.1
 
 
+# ============================= HELPER FUNCITIONS ====================================
 def sigmoid_function(x):
     # Activation function: f(x) = 1 / (1 + e^(-x))
     return 1 / (1 + np.exp(-x))
@@ -45,37 +46,7 @@ def get_mnist_data():
 
     return pixel_data, hot_encoded
 
-def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
-    # Loops through num_images images and gives the accuracy - how many the network got correct
-    correct_guess = 0
-
-    for i in range(num_images):
-        final_out = neural_network.feedforward(image_pixels[i])
-
-        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
-        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
-        
-        if out_max_index == label_max_index:
-            correct_guess += 1
-
-    accuracy = (correct_guess / num_images) * 100
-
-    return accuracy
-
-def average_cost(neural_network, image_pixels, hot_encoded, num_images):
-    # Finds what the average cost is to see how the network is performing
-    # High average cost = bad || Low average cost = good
-    total_cost = 0
-
-    for i in range(num_images):
-        final_out = neural_network.feedforward(image_pixels[i])
-
-        cost = cost_function(hot_encoded[i], final_out)
-        total_cost += cost
-
-    return (total_cost / num_images)
-
-
+# =================================== NEURON CLASS ======================================
 class Neuron:
     def __init__(self, num_inputs):
         self.bias = 0
@@ -101,6 +72,8 @@ class Neuron:
         
         return out
 
+
+# ================================ NEURAL NETWORK CLASS ================================
 class NeuralNetwork:
     def __init__(self, layers_size):
         self.layers = []
@@ -126,14 +99,6 @@ class NeuralNetwork:
         # Return this same variable as the final output
 
         for layer in self.layers:
-            '''
-            out = []
-            
-                        for neuron in layer:
-                            out.append(neuron.feedforward(current_inputs))
-                        current_inputs = out
-            '''
-
             # Current inputs processed and return an output which gets passed as the output for the next layer
             # This is the same as the bracketed code
             current_inputs = [neuron.feedforward(current_inputs) for neuron in layer]
@@ -164,7 +129,7 @@ class NeuralNetwork:
         3. Calculate new weights:
             - Work out gradient: dC/dw = input * delta
             - Work out: Learning rate * gradient
-            - New weight = Old weight * learning rate * gradient
+            - New weight = Old weight - learning rate * gradient
         '''
 
         for j, neuron in enumerate(self.layers[-1]):
@@ -197,12 +162,46 @@ class NeuralNetwork:
         for layer in self.layers:
             for neuron in layer:
                 # Calculate gradient
-                gradient = neuron.input * neuron.delta
+                gradient = np.array(neuron.input) * neuron.delta
 
                 neuron.weight-= learning_rate * gradient
                 neuron.bias-= learning_rate * neuron.delta
 
+# ================================= MEAURE NETWORK PERFORMANCE ==========================================
 
+# Calculates accuracy - how many images it got right
+def network_accuracy(neural_network, image_pixels, hot_encoded, num_images):
+    # Loops through num_images images and gives the accuracy - how many the network got correct
+    correct_guess = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        out_max_index = np.argmax(final_out) # Gets the index of the greatest number
+        label_max_index = np.argmax(hot_encoded[i]) # Find the index of the 1, which is the result
+        
+        if out_max_index == label_max_index:
+            correct_guess += 1
+
+    accuracy = (correct_guess / num_images) * 100
+
+    return accuracy
+
+# Finds what the average cost is to see how the network is performing
+# High average cost = bad || Low average cost = good
+def average_cost(neural_network, image_pixels, hot_encoded, num_images):
+    total_cost = 0
+
+    for i in range(num_images):
+        final_out = neural_network.feedforward(image_pixels[i])
+
+        cost = cost_function(hot_encoded[i], final_out)
+        total_cost += cost
+
+    return (total_cost / num_images)
+
+
+# ========================================== MAIN PROGRAM ============================================
 
 if __name__ == "__main__":
     image_pixels, hot_encoded = get_mnist_data()
