@@ -83,7 +83,7 @@ class Neuron:
         # Weights are scaled so they stay in the responsive range of sigmoid's function
         scale_factor = 1/np.sqrt(num_inputs)
         weights_random = np.random.randn(num_inputs)
-        self.weights = weights_random * scale_factor
+        self.weight = weights_random * scale_factor
 
         # Each neuron will store its input and output, so it can be seen for backpropagation
         self.input = None
@@ -93,7 +93,7 @@ class Neuron:
     def feedforward(self, inputs):
         # Feedforward is the dot product of the inputs and the weights plus the bias, and with the activation function
         # f[(a1w1 + a2w2 + anwn) + b] --> f[a•w + b]
-        total = np.dot(inputs, self.weights) + self.bias
+        total = np.dot(inputs, self.weight) + self.bias
         out = sigmoid_function(total)
 
         self.input = inputs
@@ -151,7 +151,20 @@ class NeuralNetwork:
         # Loop through each neuron in output layer
         # Calculate delta using formula: a(1-a) x 2(a-y)
         # where a is the target the neuron produced, and y is the expected output (hot encoded value)
-        delta_values = []
+
+        '''
+        1. Work out delta for output layer
+            - Find a (final output from output layer)
+            - Find y (expected output, which is hot encoded)
+            - Calculate delta using: a*(1-a) * 2*(a-y)
+
+        2. Work out delta for hidden layers:
+            - Get the weight of neuron in output layer
+            - Multiply weight * previously calculated delta
+            - Calculate sum of this: sum(weight * delta)
+            - Calculate sigmoid derivative, a(1-a) (where a is the output of the hidden neuron)
+            - Delta for hidden layer is a(1-a) * sum(weight * delta)
+        '''
 
         index = 0
         for neuron in self.layers[-1]:
@@ -161,12 +174,30 @@ class NeuralNetwork:
             index+= 1
 
             neuron.delta = a*(1-a) * 2*(a-y)
-            delta_values.append(neuron.delta)
 
-        return np.array(delta_values)
+        
+        test = []
+
+        # Start at first hidden layer (layers - 2) and moved backwards to 1st hidden layer at steps of -1
+        for i in range(len(self.layers) - 2, -1, -1):
+            current_layer = self.layers[i]
+            next_layer = self.layers[i+1]
 
 
-            
+            for j, neuron in enumerate(current_layer):
+                blame = 0
+
+                for next_neuron in next_layer:
+                    blame += next_neuron.weight[j] * next_neuron.delta
+
+                a = neuron.output
+                sigmoid_derivative = a*(1-a)
+
+                neuron.delta = sigmoid_derivative * blame
+
+                test.append(neuron.delta)
+
+        return test    
 
 
 
