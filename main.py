@@ -148,10 +148,6 @@ class NeuralNetwork:
         # Runs feedforward at start, so every neuron stores its input and output
         self.feedforward(inputs)
 
-        # Loop through each neuron in output layer
-        # Calculate delta using formula: a(1-a) x 2(a-y)
-        # where a is the target the neuron produced, and y is the expected output (hot encoded value)
-
         '''
         1. Work out delta for output layer
             - Find a (final output from output layer)
@@ -171,26 +167,25 @@ class NeuralNetwork:
             - New weight = Old weight * learning rate * gradient
         '''
 
-        index = 0
-        for neuron in self.layers[-1]:
+        for j, neuron in enumerate(self.layers[-1]):
             a = neuron.output
-            y = hot_encoded[index]
-
-            index+= 1
+            y = hot_encoded[j]
 
             neuron.delta = a*(1-a) * 2*(a-y)
 
 
         # Start at first hidden layer (layers - 2) and moved backwards to 1st hidden layer at steps of -1
         for i in range(len(self.layers) - 2, -1, -1):
-            current_layer = self.layers[i]
-            next_layer = self.layers[i+1]
+            current_layer = self.layers[i]  # Hidden layer whose deltas are being calculated
+            next_layer = self.layers[i+1]   # It is the layer after, which has the neurons with already calculated deltas
+
 
 
             for j, neuron in enumerate(current_layer):
-                blame = 0
+                blame = 0   # This accumulates and stores the sum: sum(weight * delta)
 
                 for next_neuron in next_layer:
+                    # next_neuron.weight[j] is the weight connecting the current neuron at index j to the next neuron
                     blame += next_neuron.weight[j] * next_neuron.delta
 
                 a = neuron.output
