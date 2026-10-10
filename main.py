@@ -143,7 +143,7 @@ class NeuralNetwork:
 
         return final_out
 
-    def backpropagation(self, inputs, hot_encoded):
+    def backpropagation(self, inputs, hot_encoded, learning_rate):
 
         # Runs feedforward at start, so every neuron stores its input and output
         self.feedforward(inputs)
@@ -164,6 +164,11 @@ class NeuralNetwork:
             - Calculate sum of this: sum(weight * delta)
             - Calculate sigmoid derivative, a(1-a) (where a is the output of the hidden neuron)
             - Delta for hidden layer is a(1-a) * sum(weight * delta)
+
+        3. Calculate new weights:
+            - Work out gradient: dC/dw = input * delta
+            - Work out: Learning rate * gradient
+            - New weight = Old weight * learning rate * gradient
         '''
 
         index = 0
@@ -175,8 +180,6 @@ class NeuralNetwork:
 
             neuron.delta = a*(1-a) * 2*(a-y)
 
-        
-        test = []
 
         # Start at first hidden layer (layers - 2) and moved backwards to 1st hidden layer at steps of -1
         for i in range(len(self.layers) - 2, -1, -1):
@@ -195,9 +198,14 @@ class NeuralNetwork:
 
                 neuron.delta = sigmoid_derivative * blame
 
-                test.append(neuron.delta)
 
-        return test    
+        for layer in self.layers:
+            for neuron in layer:
+                # Calculate gradient
+                gradient = neuron.input * neuron.delta
+
+                neuron.weight-= learning_rate * gradient
+                neuron.bias-= learning_rate * neuron.delta
 
 
 
@@ -217,6 +225,6 @@ if __name__ == "__main__":
     avg_cost = average_cost(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
     print(f"Average Cost: {avg_cost:.2f}")
 
-    backprop = neural_network.backpropagation(image_pixels[0], hot_encoded[0])
+    backprop = neural_network.backpropagation(image_pixels[0], hot_encoded[0], LEARNING_RATE)
     print(f"BACKPROP: {backprop}")
 
