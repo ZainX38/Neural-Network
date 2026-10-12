@@ -4,12 +4,13 @@ import pandas as pd
 np.random.seed(0)   # Makes sure random values generated are always the same - for debugging purposes
 
 LAYER_SIZES = [784, 16, 16, 10]
-NUM_IMAGES_TO_PROCESS = 1000
 
 # Hyperparameter. Used to calculate the new weight.
 # A small value such as 0.01 makes learning slow as it's moving only a tiny bit in the graph to the minima
 # A large value such as 10 makes learning impossible as it can never find a minima cause it overshoots
 LEARNING_RATE = 0.1
+EPOCHS = 3
+NUM_IMAGES_TO_PROCESS = 10000
 
 
 # ============================= HELPER FUNCITIONS ====================================
@@ -26,8 +27,8 @@ def cost_function(hot_encoded, final_out):
 
         return total_sum
 
-def get_mnist_data():
-    mnist_data = pd.read_csv("mnist_train.csv", header=None)
+def get_mnist_data(file_path):
+    mnist_data = pd.read_csv(file_path, header=None)
     mnist_data = np.array(mnist_data)
 
     labels = mnist_data[0:, 0]  # Returns first column which has the labels (results)
@@ -204,21 +205,27 @@ def average_cost(neural_network, image_pixels, hot_encoded, num_images):
 # ========================================== MAIN PROGRAM ============================================
 
 if __name__ == "__main__":
-    image_pixels, hot_encoded = get_mnist_data()
+    image_pixels, hot_encoded = get_mnist_data("mnist_train.csv")
+
+    training_pixels = image_pixels[:NUM_IMAGES_TO_PROCESS]
+    training_labels = hot_encoded[:NUM_IMAGES_TO_PROCESS]
+
+    test_pixels = image_pixels[50000:]
+    test_labels = hot_encoded[50000:]
 
     neural_network = NeuralNetwork(LAYER_SIZES)
-    final_out = neural_network.feedforward(image_pixels[0])
-    print(f"FINAL: {final_out}")
 
-    cost_error = cost_function(hot_encoded[0], final_out)
-    print(f"Cost Error: {cost_error:.2f}")
+    for epoch in range(EPOCHS):
+        # Shuffles indices, so pixels and labels stay matched
+        # This shuffles the data, which improves the network's ability to learn
+        order = np.random.permutation(NUM_IMAGES_TO_PROCESS)
 
-    accuracy = network_accuracy(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
-    print(f"Accuracy: {accuracy}%")
+        for i in order:
+            neural_network.backpropagation(training_pixels[i], training_labels[i], LEARNING_RATE)
+        
+        accuracy = network_accuracy(neural_network, test_pixels, test_labels, len(test_pixels))
+        avg_cost = average_cost(neural_network, test_pixels, test_labels, len(test_pixels))
 
-    avg_cost = average_cost(neural_network, image_pixels, hot_encoded, NUM_IMAGES_TO_PROCESS)
-    print(f"Average Cost: {avg_cost:.2f}")
-
-    backprop = neural_network.backpropagation(image_pixels[0], hot_encoded[0], LEARNING_RATE)
-    print(f"BACKPROP: {backprop}")
-
+        print(f"EPOCH {epoch + 1}:")
+        print(f"Accuracy: {accuracy}%")
+        print(f"Average Cost: {avg_cost}")
