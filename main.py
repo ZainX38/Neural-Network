@@ -10,7 +10,7 @@ LAYER_SIZES = [784, 16, 16, 10]
 # A large value such as 10 makes learning impossible as it can never find a minima cause it overshoots
 LEARNING_RATE = 0.1
 EPOCHS = 3
-NUM_IMAGES_TO_PROCESS = 10000
+NUM_IMAGES_TO_PROCESS = 50000
 
 
 # ============================= HELPER FUNCITIONS ====================================
@@ -207,25 +207,30 @@ def average_cost(neural_network, image_pixels, hot_encoded, num_images):
 if __name__ == "__main__":
     image_pixels, hot_encoded = get_mnist_data("mnist_train.csv")
 
+    # Loads training data, starting from index 0 until NUM_IMAGES_TO_PROCESS
     training_pixels = image_pixels[:NUM_IMAGES_TO_PROCESS]
     training_labels = hot_encoded[:NUM_IMAGES_TO_PROCESS]
 
-    test_pixels = image_pixels[50000:]
-    test_labels = hot_encoded[50000:]
+    # Loads all test data
+    test_pixels, test_labels = get_mnist_data("mnist_test.csv")
 
     neural_network = NeuralNetwork(LAYER_SIZES)
 
+    # An epoch is just repeating through the same data again
+    # Repeating going over the same data improves the netwrok's learning ability
     for epoch in range(EPOCHS):
         # Shuffles indices, so pixels and labels stay matched
         # This shuffles the data, which improves the network's ability to learn
         order = np.random.permutation(NUM_IMAGES_TO_PROCESS)
 
+        # Loops through the variable order index and calls backpropagation to learn
         for i in order:
             neural_network.backpropagation(training_pixels[i], training_labels[i], LEARNING_RATE)
-        
+
+        # Once all learning is done, measure the accuracy and average cost
         accuracy = network_accuracy(neural_network, test_pixels, test_labels, len(test_pixels))
         avg_cost = average_cost(neural_network, test_pixels, test_labels, len(test_pixels))
 
         print(f"EPOCH {epoch + 1}:")
-        print(f"Accuracy: {accuracy}%")
-        print(f"Average Cost: {avg_cost}")
+        print(f"Accuracy: {accuracy:.2f}%")
+        print(f"Average Cost: {avg_cost:.4f}")
