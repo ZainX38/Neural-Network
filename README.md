@@ -14,7 +14,8 @@ A neural network that learns to read handwritten digits (0–9), built using onl
 8. [How the network learns: gradient descent](#8-how-the-network-learns-gradient-descent)
 9. [Backpropagation](#9-backpropagation)
 10. [The learning rate](#10-the-learning-rate)
-11. [Running the code](#12-running-the-code)
+11. [Train the network](#11-train-the-network)
+12. [Running the code](#12-running-the-code)
 
 ---
 
@@ -613,7 +614,80 @@ By experiment. Training this network for 3 epochs on 10,000 images with differen
 
 The best value depends on the network, the activation function and the cost function, so it's always found by testing, usually trying powers of 10 first.
 
-## 11. Running the code
+## 11. Train the Network
+
+Now that the network can teach itself by adjusting the weights and biases, we now need to provide all the training and test data:
+
+```python
+NUM_IMAGES_TO_PROCESS = 50000
+
+if __name__ == "__main__":
+    image_pixels, hot_encoded = get_mnist_data("mnist_train.csv")
+
+    # Loads training data, starting from index 0 until NUM_IMAGES_TO_PROCESS
+    training_pixels = image_pixels[:NUM_IMAGES_TO_PROCESS]
+    training_labels = hot_encoded[:NUM_IMAGES_TO_PROCESS]
+
+    # Loads all test data
+    test_pixels, test_labels = get_mnist_data("mnist_test.csv")
+```
+
+- Training data is loaded starting from index 0 until whatever is the number defined by `NUM_IMAGES_TO_PROCESS`
+- Test data loads all data from the `mnist_test.csv` file, which contains 10000 images
+
+**Why are 2 sets of data loaded?**
+Training data is provided to `backpropagration` function at first. This teaches the network. Then, the test data is provided to the `network_accuracy` and `average_cost` functions which use it to test the network with new data.
+
+```python
+EPOCHS = 3
+
+neural_network = NeuralNetwork(LAYER_SIZES)
+
+for epoch in range(EPOCHS):
+        # Shuffles indices, so pixels and labels stay matched
+        # This shuffles the data, which improves the network's ability to learn
+        order = np.random.permutation(NUM_IMAGES_TO_PROCESS)
+
+        # Loops through the variable order index and calls backpropagation to learn
+        for i in order:
+            neural_network.backpropagation(training_pixels[i], training_labels[i], LEARNING_RATE)
+
+        # Once all learning is done, measure the accuracy and average cost
+        accuracy = network_accuracy(neural_network, test_pixels, test_labels, len(test_pixels))
+        avg_cost = average_cost(neural_network, test_pixels, test_labels, len(test_pixels))
+
+        print(f"EPOCH {epoch + 1}:")
+        print(f"Accuracy: {accuracy:.2f}%")
+        print(f"Average Cost: {avg_cost:.4f}")
+```
+It starts by looping through epochs.
+
+**What is an Epoch?**
+An epoch is one full pass through all the training images. It works like flashcards as going through the whole deck once is one epoch, and going through it again and again helps you learn better.
+
+At the start of each epoch, we define order. `order` holds the image numbers 0 to 49,999 in a random order. The network updates its weights after every image, so it’s pulled towards whatever it saw most recently. Shuffling makes sure it sees a mix of digits each epoch, rather than the same sequence every time.
+
+Then, as mentioned before, `backpropagation` gets passed with the training data while `network_accuracy` and `average_cost` get passed with test data.
+
+**Final Results:**
+
+```shell
+EPOCH 1:
+Accuracy: 91.75%
+Average Cost: 0.1270
+
+EPOCH 2:
+Accuracy: 92.13%
+Average Cost: 0.1209
+
+EPOCH 3:
+Accuracy: 93.01%
+Average Cost: 0.1113
+```
+
+These results were measured using 50000 training images and all 10000 test images, with 3 epochs. 
+
+## 12. Running the code
 
 **Requirements:** Python 3, NumPy, pandas.
 
@@ -636,3 +710,14 @@ python main.py
 | Cost for the first image | ≈ 3.04 |
 | Accuracy (first 1,000 images) | 10.5% |
 | Average cost (first 1,000 images) | ≈ 3.25 |
+
+**Expected output after learning** (with `np.random.seed(0)`, 50,000 training images, 3 epochs, learning rate 0.1):
+
+| Epoch | Accuracy (test set) | Average cost (test set) |
+| --- | --- | --- |
+| Before learning | ~10% | ~3.25 |
+| 1 | 91.75% | 0.1270 |
+| 2 | 92.13% | 0.1209 |
+| 3 | 93.01% | 0.1113 |
+
+Accuracy and average cost are measured on all 10,000 images in `mnist_test.csv`, which the network never trains on. Training takes around a minute.
