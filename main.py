@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 
 np.random.seed(0)   # Makes sure random values generated are always the same - for debugging purposes
 
@@ -234,3 +236,95 @@ if __name__ == "__main__":
         print(f"EPOCH {epoch + 1}:")
         print(f"Accuracy: {accuracy:.2f}%")
         print(f"Average Cost: {avg_cost:.4f}")
+
+        # ---------------- Predict every test image once ----------------
+    all_preds = np.array([np.argmax(neural_network.feedforward(img)) for img in test_pixels])
+    all_labels = np.argmax(test_labels, axis=1)
+
+    # Indices of the test images in each group
+    groups = {
+        "Correct": np.where(all_preds == all_labels)[0],
+        "Incorrect": np.where(all_preds != all_labels)[0],
+    }
+    print(f"Correct: {len(groups['Correct'])} | Incorrect: {len(groups['Incorrect'])}")
+
+    ROWS, COLS = 4, 6
+    PER_PAGE = ROWS * COLS
+    state = {"tab": "Correct", "page": 0}   # Which tab and page are on screen
+
+    fig, axes = plt.subplots(ROWS, COLS, figsize=(12, 8), facecolor="#0b1220")
+    fig.subplots_adjust(top=0.9, bottom=0.14, hspace=0.5)   # Leave room for the buttons
+
+    def num_pages():
+        return max(1, int(np.ceil(len(groups[state["tab"]]) / PER_PAGE)))
+
+    def draw():
+        # Work out which images belong on the current page
+        indices = groups[state["tab"]]
+        start = state["page"] * PER_PAGE
+        page_indices = indices[start:start + PER_PAGE]
+
+        for k, ax in enumerate(axes.flat):
+            ax.clear()
+            ax.axis("off")
+            if k < len(page_indices):   # Last page may not be full
+                i = page_indices[k]
+                p, t = all_preds[i], all_labels[i]
+                ax.imshow(test_pixels[i].reshape(28, 28), cmap="gray")
+                ax.set_title(f"pred {p} / true {t}",
+                             color="#4ade80" if p == t else "#f87171", fontsize=10)
+
+        fig.suptitle(f"{state['tab']}: {len(indices)} images | page {state['page'] + 1}/{num_pages()}",
+                     color="white", fontsize=14)
+
+        # Highlight the active tab button
+        for name, btn in tab_buttons.items():
+            colour = "#38bdf8" if name == state["tab"] else "#334155"
+            btn.color = colour
+            btn.ax.set_facecolor(colour)
+
+        fig.canvas.draw_idle()
+
+    def show_tab(name):
+        state["tab"] = name
+        state["page"] = 0
+        draw()
+
+    def change_page(step):
+        state["page"] = (state["page"] + step) % num_pages()   # Wraps around
+        draw()
+
+    def save_view(_):
+        # Hide the buttons so the PNG only has the digits
+        for b in all_buttons:
+            b.ax.set_visible(False)
+        filename = f"mnist_{state['tab'].lower()}_page{state['page'] + 1}.png"
+        fig.savefig(filename, dpi=100, facecolor=fig.get_facecolor())
+        for b in all_buttons:
+            b.ax.set_visible(True)
+        fig.canvas.draw_idle()
+        print(f"Saved {filename}")
+
+    def make_button(rect, label):
+        # rect = [left, bottom, width, height] as fractions of the window
+        btn = Button(fig.add_axes(rect), label, color="#334155", hovercolor="#475569")
+        btn.label.set_color("white")
+        return btn
+
+    btn_correct = make_button([0.05, 0.03, 0.14, 0.06], "Correct")
+    btn_incorrect = make_button([0.20, 0.03, 0.14, 0.06], "Incorrect")
+    btn_prev = make_button([0.50, 0.03, 0.10, 0.06], "< Prev")
+    btn_next = make_button([0.61, 0.03, 0.10, 0.06], "Next >")
+    btn_save = make_button([0.83, 0.03, 0.12, 0.06], "Save PNG")
+
+    tab_buttons = {"Correct": btn_correct, "Incorrect": btn_incorrect}
+    all_buttons = [btn_correct, btn_incorrect, btn_prev, btn_next, btn_save]
+
+    btn_correct.on_clicked(lambda _: show_tab("Correct"))
+    btn_incorrect.on_clicked(lambda _: show_tab("Incorrect"))
+    btn_prev.on_clicked(lambda _: change_page(-1))
+    btn_next.on_clicked(lambda _: change_page(1))
+    btn_save.on_clicked(save_view)
+
+    draw()
+    plt.show()
